@@ -1,0 +1,13 @@
+1.Nltk net
+- https://github.com/nrcpp/NltkNet
+- To get nltk, install it in normal python2.7 and copy 
+C:\Python27\lib\sitepackages:
+	nltk
+	singledispatch
+	singledispatch_helpers
+	six
+To IronPython2.7 install directory
+- install nltk corpuses
+import nltk 
+import nltk.corpus
+nltk.download('book')
