@@ -12,7 +12,7 @@ namespace RelatedWordsAPI.Models
         public Word Word { get; set; }
         public Sentence Sentence { get; set; }
         public int Count { get; set; }
-
+        public WordSentence() { }
         public WordSentence(Word word, Sentence sentence, int count)
         {
             Word = word;

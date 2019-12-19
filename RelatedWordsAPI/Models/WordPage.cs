@@ -12,7 +12,7 @@ namespace RelatedWordsAPI.Models
         public Page Page { get; set; }
         public Word Word { get; set; }
         public int Count { get; set; }
-
+        public WordPage() { }
         public WordPage(Word word, Page page, int count)
         {
             Word = word;

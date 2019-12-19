@@ -12,19 +12,4 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="LemmaSharp">
-      <HintPath>..\lemmization_files\LemmaGen_v3.0_PrebuiltCompact_dll\LemmaSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="LemmaSharpPrebuilt">
-      <HintPath>..\lemmization_files\LemmaGen_v3.0_PrebuiltCompact_dll\LemmaSharpPrebuilt.dll</HintPath>
-    </Reference>
-    <Reference Include="LemmaSharpPrebuiltCompact">
-      <HintPath>..\lemmization_files\LemmaGen_v3.0_PrebuiltCompact_dll\LemmaSharpPrebuiltCompact.dll</HintPath>
-    </Reference>
-    <Reference Include="Lzma#">
-      <HintPath>..\lemmization_files\LemmaGen_v3.0_PrebuiltCompact_dll\Lzma#.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

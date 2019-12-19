@@ -12,6 +12,7 @@ namespace RelatedWordsAPI.Models
         public Page Page { get; set; }
         public int SentenceNumber { get; set; }
         public ICollection<WordSentence> WordInSentences { get; }
+        public Sentence() { }
         public Sentence(Page page, int sentenceNumber)
         {
             Page = page;

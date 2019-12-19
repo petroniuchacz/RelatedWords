@@ -11,9 +11,9 @@ using NltkNet;
 
 namespace RelatedWordsAPI.RelatedWordsProcessor.Helper
 {
-    public class Filters
+    public class TextFilters
     {
-        private static readonly Filters instance = new Filters();
+        private static readonly TextFilters instance = new TextFilters();
         private static Dictionary<string, string> _cache = new Dictionary<string, string>();
         private static readonly Dictionary<string, string> _tagTranslator = TagTranslatorCreator();
         private Nltk.Stem.WordNetLemmatizer _lemmatizer = new Nltk.Stem.WordNetLemmatizer();
@@ -22,13 +22,13 @@ namespace RelatedWordsAPI.RelatedWordsProcessor.Helper
         {
             get { return _tagTranslator; }
         }
-        static Filters()
+        static TextFilters()
         {
         }
-        private Filters()
+        private TextFilters()
         {
         }
-        public static Filters Instance
+        public static TextFilters Instance
         {
             get
             {

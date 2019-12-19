@@ -23,10 +23,20 @@ namespace RelatedWordsAPI.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>().ToTable("User");
-            modelBuilder.Entity<Project>().ToTable("Project");
+            modelBuilder.Entity<Project>().ToTable("Project")
+                .Property(p => p.ProcessingStatus)
+                .HasDefaultValue(ProjectProcessingStatus.NotStarted)
+                .HasConversion<string>();
             modelBuilder.Entity<Page>().ToTable("Page")
                 .Property(p => p.ProcessingStatus)
-                .HasDefaultValue(PageProcessingStatus.NotStarted);
+                .HasDefaultValue(PageProcessingStatus.NotStarted)
+                .HasConversion<string>();
+            modelBuilder.Entity<Sentence>().ToTable("Sentence");
+            modelBuilder.Entity<Word>().ToTable("Word");
+            modelBuilder.Entity<WordSentence>().ToTable("WordSentence")
+                .HasKey(ws => new { ws.WordId, ws.SentenceId });
+            modelBuilder.Entity<WordPage>().ToTable("WordPage")
+                .HasKey(wp => new { wp.WordId, wp.PageId });
         }
     }
 

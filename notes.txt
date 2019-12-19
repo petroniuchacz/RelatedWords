@@ -7,7 +7,14 @@ C:\Python27\lib\sitepackages:
 	singledispatch_helpers
 	six
 To IronPython2.7 install directory
-- install nltk corpuses
+- install nltk corpuses -> on Winows navigate to user Dir. In linux to one of the following
+    - '/usr/share/nltk_data'
+    - '/usr/local/share/nltk_data'
+    - '/usr/lib/nltk_data'
+    - '/usr/local/lib/nltk_data'
+	Then:
+
 import nltk 
 import nltk.corpus
 nltk.download('book')
+- Nuget NltkNet

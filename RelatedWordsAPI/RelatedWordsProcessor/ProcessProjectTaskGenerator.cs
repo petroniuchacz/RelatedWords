@@ -25,10 +25,10 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
         private CancellationToken _cancellationToken;
         private static readonly List<Func<string, string>> _filters = new List<Func<string, string>>
                     {
-                        Filters.Instance.HtmlFilter,
-                        Filters.Instance.SegmentAndLammatize,
-                        Filters.Instance.RemoveLooseInterpuction,
-                        Filters.Instance.Myfilter,
+                        TextFilters.Instance.HtmlFilter,
+                        TextFilters.Instance.SegmentAndLammatize,
+                        TextFilters.Instance.RemoveLooseInterpuction,
+                        TextFilters.Instance.Myfilter,
                     };
 
         /// <summary>

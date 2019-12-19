@@ -14,7 +14,7 @@ namespace RelatedWordsAPI.Models
 
         public ICollection<WordSentence> WordSentences { get; }
         public ICollection<WordPage> WordPages { get; }
-
+        public Word() { }
         public Word(Project project, string wordContnet)
         {
             Project = project;
