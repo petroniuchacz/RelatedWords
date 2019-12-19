@@ -16,10 +16,10 @@ namespace RelatedWordsAPI.Services
 {
     public interface IUserService
     {
-        User Authenticate(string username, string password);
-        void Register(User user);
-        IEnumerable<User> GetAll();
-        User GetById(int id);
+        Task<User> Authenticate(string username, string password);
+        Task Register(User user);
+        Task<IEnumerable<User>> GetAll();
+        Task<User> GetById(int id);
     }
 
     public class UserService : IUserService

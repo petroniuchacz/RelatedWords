@@ -25,12 +25,12 @@ namespace RelatedWordsAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost("authenticate")]
-        public IActionResult Authenticate([FromBody]User userParam)
+        public async Task<IActionResult> Authenticate([FromBody]User userParam)
         {
             if (userParam?.Email == null || userParam.Password == null)
                 return BadRequest(new { message = "Missing email or password" });
 
-            var user = _userService.Authenticate(userParam.Email, userParam.Password);
+            var user = await _userService.Authenticate(userParam.Email, userParam.Password).ConfigureAwait(false);
 
             if (user == null)
                 return BadRequest(new { message = "Email or password is incorrect" });
@@ -40,16 +40,17 @@ namespace RelatedWordsAPI.Controllers
 
         [Authorize(Roles = Role.Admin)]
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var users = _userService.GetAll().Select(u => Models.User.GenerateWithoutSensitive(u));
-            return Ok(users);
+            var users = await _userService.GetAll().ConfigureAwait(false);
+            var usersWithoutSensitive = users.Select(u => Models.User.GenerateWithoutSensitive(u));
+            return Ok(usersWithoutSensitive);
         }
 
         [HttpGet("{UserId}")]
-        public IActionResult GetById(int UserId)
+        public async Task<IActionResult> GetById(int UserId)
         {
-            var user = _userService.GetById(UserId);
+            var user = await _userService.GetById(UserId).ConfigureAwait(false);
 
             if (user == null)
             {
@@ -68,36 +69,38 @@ namespace RelatedWordsAPI.Controllers
 
         [Authorize(Roles = Role.Admin)]
         [HttpPost("register")]
-        public IActionResult Register([FromBody]User userParam)
+        public async Task<IActionResult> Register([FromBody]User userParam)
         {
             if (userParam?.Email == null || userParam.Password == null || !Role.Roles().Contains(userParam.Role))
                 return BadRequest(new { message = "Missing email, password or role." });
 
-            var user = _userService.GetAll().Where(u => u.Email == userParam.Email).FirstOrDefault();
+            var users = await _userService.GetAll().ConfigureAwait(false);
+            var user = users.Where(u => u.Email == userParam.Email).FirstOrDefault();
 
             if (user != null)
                 return BadRequest(new { message = "This email address is already in use." });
 
             user = new User(userParam.Email, userParam.Password, userParam.Role);
-            _userService.Register(user);
+            await _userService.Register(user).ConfigureAwait(false);
 
             return Ok();
         }
 
         [AllowAnonymous]
         [HttpPost("setupadmin")]
-        public IActionResult SetupAdmin([FromBody]User userParam)
+        public async Task<IActionResult> SetupAdmin([FromBody]User userParam)
         {
             if (userParam?.Email == null || userParam.Password == null)
                 return BadRequest(new { message = "Missing email or password" });
 
-            var admin = _userService.GetAll().Where(u => u.Role == Role.Admin).FirstOrDefault();
+            var users = await _userService.GetAll().ConfigureAwait(false);
+            var admin = users.Where(u => u.Role == Role.Admin).FirstOrDefault();
 
             if (admin != null)
                 return BadRequest(new { message = "An admin user already exists." });
 
             admin = new User(userParam.Email, userParam.Password, Role.Admin);
-            _userService.Register(admin);
+            await _userService.Register(admin);
 
             return Ok();
         }
