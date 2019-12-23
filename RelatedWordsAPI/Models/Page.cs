@@ -16,8 +16,8 @@ namespace RelatedWordsAPI.Models
     }
     public class Page
     {
-        public int PageId { get; set; }
-        public int ProjectId { get; set; }
+        public int? PageId { get; set; }
+        public int? ProjectId { get; set; }
         public Project Project { get; set; }
         public string OriginalContent { get; set; }
         public string FilteredContent { get; set; }

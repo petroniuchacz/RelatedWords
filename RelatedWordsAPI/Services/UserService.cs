@@ -11,6 +11,7 @@ using RelatedWordsAPI.App;
 using RelatedWordsAPI.App.Helpers;
 using RelatedWordsAPI.Models;
 using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace RelatedWordsAPI.Services
 {
@@ -86,6 +87,11 @@ namespace RelatedWordsAPI.Services
             var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == id).ConfigureAwait(false);
                 
             return user;
+        }
+
+        public static int GetUserId (ClaimsPrincipal User)
+        {
+            return int.Parse(User.Identity.Name);
         }
     }
 }

@@ -25,7 +25,7 @@ namespace RelatedWordsAPI.Models
         public string Name { get; set; }
         public User User { get; set; }
         public ProjectProcessingStatus ProcessingStatus { get; set; }
-        public ICollection<Page> Pages { get; }
+        public ICollection<Page> Pages { get; set; }
         public ISet<Word> Words { get; private set; }
     }
 }

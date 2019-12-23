@@ -186,20 +186,14 @@ namespace RelatedWordsAPI.Controllers
             return _context.Projects.Any(e => e.ProjectId == id);
         }
 
-        private static async Task<bool> DoesntBelongToUser(int userId, int projectId, RelatedWordsContext context)
+        internal static Task<bool> DoesntBelongToUser(int userId, int projectId, RelatedWordsContext context)
         {
-            var project = await context.Projects
-                .Where(p => p.UserId == userId && p.ProjectId == projectId)
-                .AsNoTracking()
-                .SingleOrDefaultAsync()
-                .ConfigureAwait(false);
-
-            return project == null ? true : false;
+            return ProjectValidation.DoesntBelongToUser(userId, projectId, context);
         }
 
-        private static Task<bool> DoesntBelongToUser (int projectId, ClaimsPrincipal User, RelatedWordsContext context)
+        internal static Task<bool> DoesntBelongToUser (int projectId, ClaimsPrincipal User, RelatedWordsContext context)
         {
-            return DoesntBelongToUser(int.Parse(User.Identity.Name), projectId, context);
+            return ProjectValidation.DoesntBelongToUser(projectId, User, context);
         }
 
         /// <summary>
