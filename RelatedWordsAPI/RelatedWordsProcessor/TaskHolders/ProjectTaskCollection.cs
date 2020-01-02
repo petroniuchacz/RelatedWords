@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Collections.Concurrent;
 using RelatedWordsAPI.Models;
 
@@ -9,8 +10,8 @@ namespace RelatedWordsAPI.RelatedWordsProcessor.TaskHolders
 {
     public class ProjectTaskCollection
     {
-        private ConcurrentDictionary<int, Task> _dict;
-        private static readonly ProjectTaskCollection instance = new ProjectTaskCollection();
+        private ConcurrentDictionary<int, TaskHolder> _dict;
+        private static readonly ProjectTaskCollection _instance = new ProjectTaskCollection();
         // Explicit static constructor to tell C# compiler  
         // not to mark type as beforefieldinit  
         static ProjectTaskCollection()
@@ -18,20 +19,20 @@ namespace RelatedWordsAPI.RelatedWordsProcessor.TaskHolders
         }
         private ProjectTaskCollection()
         {
-            _dict = new ConcurrentDictionary<int, Task>();
+            _dict = new ConcurrentDictionary<int, TaskHolder>();
         }
         public static ProjectTaskCollection Instance
         {
             get
             {
-                return instance;
+                return _instance;
             }
         }
 
-        public Task GetProjectTaskOrNull(Project project)
+        public TaskHolder GetProjectTaskOrNull(Project project)
         {
-            Task task;
-            return _dict.TryGetValue(project.ProjectId, out task) ? task : null;
+            TaskHolder taskHolder;
+            return _dict.TryGetValue(project.ProjectId, out taskHolder) ? taskHolder : null;
         }
 
         public bool ContainsProjectTask(Project project)
@@ -39,9 +40,35 @@ namespace RelatedWordsAPI.RelatedWordsProcessor.TaskHolders
             return _dict.ContainsKey(project.ProjectId);
         }
 
-        public bool TryAddProjectTask(Project project, Task task)
+        public bool TryAddProjectTask(Project project, TaskHolder taskHolder)
         {
-            return _dict.TryAdd(project.ProjectId, task);
+            return _dict.TryAdd(project.ProjectId, taskHolder);
+        }
+
+
+        public bool TryAddOrReplaceProjectTask(Project project, Task newTask, CancellationTokenSource cancellationTokenSource)
+        {
+            lock(_instance)
+            {
+                TaskHolder taskHolder = GetProjectTaskOrNull(project);
+
+                if (taskHolder == null)
+                {
+                    TaskHolder newTaskHolder = new TaskHolder(newTask, cancellationTokenSource);
+                    TryAddProjectTask(project, newTaskHolder);
+                    return true;
+                }
+                    
+                switch(taskHolder.Task.Status)
+                {
+                    case TaskStatus.Running:
+                        return false;
+                    default:
+                        TaskHolder newTaskHolder = new TaskHolder(newTask, cancellationTokenSource);
+                        TryAddProjectTask(project, newTaskHolder);
+                        return true;
+                }
+            }
         }
     }
 }

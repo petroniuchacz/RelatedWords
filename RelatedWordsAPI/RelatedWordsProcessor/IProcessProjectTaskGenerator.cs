@@ -9,8 +9,8 @@ using RelatedWordsAPI.Services;
 
 namespace RelatedWordsAPI.RelatedWordsProcessor
 {
-    interface IProcessProjectTaskGenerator
+    public interface IProcessProjectTaskGenerator
     {
-        Task ProcessProjectTaskGenerate(Project p, RelatedWordsContext context, HttpEngine httpEngine, CancellationToken cancellationToken);
+        Task ProcessProjectTaskRun(CancellationToken cancellationToken);
     }
 }

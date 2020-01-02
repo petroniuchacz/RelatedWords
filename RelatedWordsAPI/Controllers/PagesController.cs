@@ -12,6 +12,7 @@ using RelatedWordsAPI.Services;
 
 namespace RelatedWordsAPI.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class PagesController : ControllerBase

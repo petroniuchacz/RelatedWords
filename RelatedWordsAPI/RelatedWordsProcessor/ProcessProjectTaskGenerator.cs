@@ -20,8 +20,9 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
     public class ProcessProjectTaskGenerator : IProcessProjectTaskGenerator
     {
         private Project _project;
+        private Project _projectWithoutPages;
         private RelatedWordsContext _context;
-        private HttpEngine _httpEngine;
+        private IHttpEngine _httpEngine;
         private CancellationToken _cancellationToken;
         private static readonly List<Func<string, string>> _filters = new List<Func<string, string>>
                     {
@@ -30,6 +31,13 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                         TextFilters.Instance.RemoveLooseInterpuction,
                         TextFilters.Instance.Myfilter,
                     };
+
+        public ProcessProjectTaskGenerator(Project p, RelatedWordsContext context, IHttpEngine httpEngine)
+        {
+            _context = context;
+            _httpEngine = httpEngine;
+            _projectWithoutPages = p;
+        }
 
         /// <summary>
         /// Returns a Task that represents the complete processing job for a given project.
@@ -40,19 +48,15 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
         /// <exception cref="RelatedWordsAPI.App.InputProjectNotValid">
         /// <paramref name="project"/> not valid.
         /// </exception>
-        public async Task ProcessProjectTaskGenerate
-            (Project p, RelatedWordsContext context, HttpEngine httpEngine, CancellationToken cancellationToken)
+        /// 
+        public async Task ProcessProjectTaskRun(CancellationToken cancellationToken)
         {
-            _context = context;
-            _httpEngine = httpEngine;
             _cancellationToken = cancellationToken;
-
-            _project = await GetProjectFromDB(p).ConfigureAwait(false);
+            _project = await GetProjectFromDB(_projectWithoutPages).ConfigureAwait(false);
             Validate(_project);
 
-            await ProcessProject(_project, cancellationToken).ConfigureAwait(false);
+            await ProcessProject(_project, _cancellationToken).ConfigureAwait(false);
         }
-
 
         private Task<Project> GetProjectFromDB(Project p)
         {

@@ -75,6 +75,9 @@ namespace RelatedWordsAPI
 
             // configure DI for application services
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IRelatedWordsProcessorService, RelatedWordsProcessorService>();
+            // Context factory required to provide DbContext objects for backgroud processing, which lives longer then the request.
+            //services.AddTransient<Func<AppDbContext>>((provider) => new Func<MyDbContext>(() => new AppDbContext()));
 
         }
 
