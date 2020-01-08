@@ -46,7 +46,7 @@ namespace RelatedWordsAPI
             services.AddDbContext<RelatedWordsContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("RelatedWordsContext")));
 
-            services.AddSingleton<IHttpEngine>(new HttpEngine(Configuration.GetValue<string>("HttpUserAgent")));
+            services.AddScoped<IHttpEngine, HttpEngine>();
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("AppSettings");
@@ -75,7 +75,7 @@ namespace RelatedWordsAPI
 
             // configure DI for application services
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IRelatedWordsProcessorService, RelatedWordsProcessorService>();
+            services.AddSingleton<IRelatedWordsProcessorService, RelatedWordsProcessorService>();
             // Context factory required to provide DbContext objects for backgroud processing, which lives longer then the request.
             //services.AddTransient<Func<AppDbContext>>((provider) => new Func<MyDbContext>(() => new AppDbContext()));
 

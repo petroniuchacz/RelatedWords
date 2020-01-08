@@ -46,7 +46,7 @@ namespace RelatedWordsAPI.RelatedWordsProcessor.TaskHolders
         }
 
 
-        public bool TryAddOrReplaceProjectTask(Project project, Task newTask, CancellationTokenSource cancellationTokenSource)
+        public bool TryAddOrReplaceProjectTask(Project project, Task<Task> newTask, CancellationTokenSource cancellationTokenSource)
         {
             lock(_instance)
             {
@@ -59,8 +59,10 @@ namespace RelatedWordsAPI.RelatedWordsProcessor.TaskHolders
                     return true;
                 }
                     
-                switch(taskHolder.Task.Status)
+                switch(taskHolder.Task.Result.Status)
                 {
+                    case TaskStatus.WaitingForActivation:
+                        return false;
                     case TaskStatus.Running:
                         return false;
                     default:

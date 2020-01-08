@@ -9,5 +9,6 @@ namespace RelatedWordsAPI.App
     {
         public string Secret { get; set; }
         public int TokenExpiryInDays { get; set; }
+        public string HttpUserAgent { get; set; }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using RelatedWordsAPI.Models;
 using RelatedWordsAPI.App;
 using System.Net.Http;
@@ -21,9 +22,6 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
     {
         private Project _project;
         private Project _projectWithoutPages;
-        private RelatedWordsContext _context;
-        private IHttpEngine _httpEngine;
-        private CancellationToken _cancellationToken;
         private static readonly List<Func<string, string>> _filters = new List<Func<string, string>>
                     {
                         TextFilters.Instance.HtmlFilter,
@@ -31,11 +29,11 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                         TextFilters.Instance.RemoveLooseInterpuction,
                         TextFilters.Instance.Myfilter,
                     };
+        private readonly IServiceProvider _serviceProvider;
 
-        public ProcessProjectTaskGenerator(Project p, RelatedWordsContext context, IHttpEngine httpEngine)
+        public ProcessProjectTaskGenerator(Project p, IServiceProvider serviceProvider)
         {
-            _context = context;
-            _httpEngine = httpEngine;
+            _serviceProvider = serviceProvider;
             _projectWithoutPages = p;
         }
 
@@ -49,21 +47,16 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
         /// <paramref name="project"/> not valid.
         /// </exception>
         /// 
-        public async Task ProcessProjectTaskRun(CancellationToken cancellationToken)
+        public async Task ProcessProjectTaskRunAsync(CancellationToken cancellationToken)
         {
-            _cancellationToken = cancellationToken;
-            _project = await GetProjectFromDB(_projectWithoutPages).ConfigureAwait(false);
-            Validate(_project);
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
+                _project = await GetProjectWithPagesAsync(_projectWithoutPages, context).ConfigureAwait(false);
+                Validate(_project);
 
-            await ProcessProject(_project, _cancellationToken).ConfigureAwait(false);
-        }
-
-        private Task<Project> GetProjectFromDB(Project p)
-        {
-            return _context.Projects
-                .Where(savedp => savedp.ProjectId == p.ProjectId)
-                .Include(savedp => savedp.Pages)
-                .SingleOrDefaultAsync();
+                await ProcessProjectAsync(_project, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         private void Validate(Project p)
@@ -73,7 +66,7 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
             if (p.Pages.Count == 0) 
                 messages.Add("No pages defined.");
 
-            if (p.Pages.Any(page => Uri.IsWellFormedUriString(page.Url, UriKind.RelativeOrAbsolute)))
+            if (p.Pages.Any(page => !Uri.IsWellFormedUriString(page.Url, UriKind.RelativeOrAbsolute)))
                 messages.Add("Nonvalid page URL.");
 
             if (messages.Count > 0)
@@ -83,61 +76,136 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
         /// <summary>
         /// Returns a Task that represents the complete processing job for a given project.
         /// </summary>
-        /// <exception cref="HttpRequestException">
-        /// Http error.
-        /// </exception>
-        private async Task ProcessProject(Project project, CancellationToken cancellationToken)
+        private async Task ProcessProjectAsync(Project passedProject, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            using (var scope = _serviceProvider.CreateScope()) 
+            {
+                var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
+                var project = await GetProjectWithPagesAsync(passedProject, context);
+
+                try
+                {
+                    await ToggleProjectStatusAsync(project, cancellationToken, ProjectProcessingStatus.Processing);
+
+                    await TogglePagesStatusAsync(project, cancellationToken, PageProcessingStatus.Processing);
+
+                    await PreparePageContentAsync(project, cancellationToken).ConfigureAwait(false);
+
+                    await SaveProjectWordsAsync(project, cancellationToken).ConfigureAwait(false);
+
+                    await SavePageSentenceWordsAsync(project, cancellationToken).ConfigureAwait(false);
+
+                    await ToggleProjectStatusAsync(project, cancellationToken, ProjectProcessingStatus.Finished);
+                }
+                catch (TaskCanceledException)
+                {
+                    project.ProcessingStatus = ProjectProcessingStatus.Canceled;
+                    await context.SaveChangesAsync();
+                }
+
+                catch (Exception)
+                {
+                    project.ProcessingStatus = ProjectProcessingStatus.Failed;
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
+        private async Task ToggleProjectStatusAsync(Project passedProject, CancellationToken cancellationToken, ProjectProcessingStatus status)
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
+                var project = await GetProjectAsync(passedProject, context);
+                project.ProcessingStatus = status;
+                await context.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        private async Task TogglePagesStatusAsync(Project passedProject, CancellationToken cancellationToken, PageProcessingStatus status)
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
+                var project = await GetProjectWithPagesAsync(passedProject, context);
+                //project.Pages.ToList().ForEach(page =>
+                //        page.ProcessingStatus =
+                //            page.ProcessingStatus != PageProcessingStatus.Finished ?
+                //            status : PageProcessingStatus.Finished
+                //        );
+                project.Pages.ToList().ForEach(page => page.ProcessingStatus = status);
+                await context.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        private async Task PreparePageContentAsync(Project passedProject, CancellationToken cancellationToken)
+        {
             List<Task> tasks = new List<Task>();
             var pagesToTasks = new Dictionary<Page, Task>();
-
-            project.Pages.ToList().ForEach(page => 
-                page.ProcessingStatus = 
-                    page.ProcessingStatus != PageProcessingStatus.Finished ? 
-                    PageProcessingStatus.Processing : PageProcessingStatus.Finished
-                );
-            await _context.SaveChangesAsync().ConfigureAwait(false);
-
-            foreach (Page page in project.Pages)
+            using (var scope = _serviceProvider.CreateScope())
             {
-                if (page.ProcessingStatus != PageProcessingStatus.Processing)
-                    continue;
-                Task t = PrepareContent(page, cancellationToken);
-                pagesToTasks[page] = t;
-                tasks.Add(t);
+                var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
+                var project = await GetProjectWithPagesAsync(passedProject, context);
+                foreach (Page page in project.Pages)
+                {
+                    if (page.ProcessingStatus != PageProcessingStatus.Processing)
+                        continue;
+                    Task t = PrepareContent(page, cancellationToken);
+                    pagesToTasks[page] = t;
+                    tasks.Add(t);
+                }
+
+                try
+                {
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
+                }
+                catch (TaskCanceledException e)
+                {
+                    throw e;
+                }
+                catch (Exception) { }
+
+                SetPageFilteringResult(pagesToTasks);
+
+                await context.SaveChangesAsync().ConfigureAwait(false);
             }
-
-            await _context.SaveChangesAsync().ConfigureAwait(false);
-
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-
-            await SavePageFilteringResult(pagesToTasks).ConfigureAwait(false);
-
-            await SaveProjectWords(project).ConfigureAwait(false);
-
-            await SavePageSentenceWords(project, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task SaveProjectWords(Project project)
+        private async Task SaveProjectWordsAsync(Project passedProject, CancellationToken cancellationToken)
         {
-            var pages = project.Pages;
-            foreach (var page in pages)
+            using (var scope = _serviceProvider.CreateScope())
             {
-                if (page.ProcessingStatus != PageProcessingStatus.Filtered)
-                    continue;
+                var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
+                var project = await GetProjectWithPagesAsync(passedProject, context);
+                await context.Entry(project).Collection(project => project.Words).LoadAsync(cancellationToken);
+                context.RemoveRange(project.Words);
+                var pages = project.Pages;
+                var words = new HashSet<Word>();
+                foreach (var page in pages)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (page.ProcessingStatus != PageProcessingStatus.Filtered)
+                        continue;
 
-                string content = page.FilteredContent;
+                    string content = page.FilteredContent;
 
-                foreach (string word in content.Split())
-                    project.Words.Add(new Word(project, word));
+                    foreach (string word in content.Split())
+                    {
+                        if (word != "")
+                        {
+                            words.Add(new Word(word, project));
+                        }
+                        
+                    }
+                }
+                context.Words.AddRange(words);
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
-            await _context.SaveChangesAsync().ConfigureAwait(false);
         }
 
-
-
-        private async Task SavePageFilteringResult(Dictionary<Page, Task> pagesToTasks)
+        private void SetPageFilteringResult(Dictionary<Page, Task> pagesToTasks)
         {
             foreach (Page page in pagesToTasks.Keys)
             {
@@ -158,46 +226,21 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                         break;
                 }
             }
-
-            await _context.SaveChangesAsync().ConfigureAwait(false);
-        }
-
-        private async Task SavePageProcessingResult(Dictionary<Page, Task> pagesToTasks)
-        {
-            foreach (Page page in pagesToTasks.Keys)
-            {
-                Task t = pagesToTasks[page];
-                switch (t.Status)
-                {
-                    case TaskStatus.RanToCompletion:
-                        page.ProcessingStatus = PageProcessingStatus.Finished;
-                        break;
-                    case TaskStatus.Faulted:
-                        page.ProcessingStatus = PageProcessingStatus.Failed;
-                        break;
-                    case TaskStatus.Canceled:
-                        page.ProcessingStatus = PageProcessingStatus.Canceled;
-                        break;
-                    default:
-                        page.ProcessingStatus = PageProcessingStatus.Unknown;
-                        break;
-                }
-            }
-
-            await _context.SaveChangesAsync().ConfigureAwait(false);
         }
 
         private Task PrepareContent(Page page, CancellationToken cancellationToken)
         {
             return Task.Run(async () =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                string innerHtml = await _httpEngine.GetAsync(page.Url, cancellationToken).ConfigureAwait(false);
-                page.OriginalContent = innerHtml;
-                // Above three lines can be replaced with new helper method below
-                // string responseBody = await _httpEngine.GetStringAsync(page.Url);
-                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var httpEngine = scope.ServiceProvider.GetRequiredService<IHttpEngine>();
+                    cancellationToken.ThrowIfCancellationRequested();
+                    string innerHtml = await httpEngine.GetAsync(page.Url, cancellationToken).ConfigureAwait(false);
+                    page.OriginalContent = innerHtml;
+                    // Above three lines can be replaced with new helper method below
+                    // string responseBody = await _httpEngine.GetStringAsync(page.Url);
+                }
             }, cancellationToken)
                 .ContinueWith(async (previous) =>
                 {
@@ -208,26 +251,28 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
 
                     page.FilteredContent = filteredContent;
 
-                    await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
                 },
             cancellationToken,
             TaskContinuationOptions.AttachedToParent | TaskContinuationOptions.OnlyOnRanToCompletion,
             TaskScheduler.Default);
         }
 
-        private async Task SavePageSentenceWords(Project project, CancellationToken cancellationToken)
+        private async Task SavePageSentenceWordsAsync(Project passedProject, CancellationToken cancellationToken)
         {
-            ISet<Word> projectWords = _context.Words.Where(word => word.ProjectId == project.ProjectId).ToHashSet();
-            var pageTasks = new Dictionary<Page, Task>();
-
-            foreach (Page page in project.Pages)
+            using (var scope = _serviceProvider.CreateScope())
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (page.ProcessingStatus != PageProcessingStatus.Filtered)
-                    continue;
+                var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
+                var project = await GetProjectWithPagesAsync(passedProject, context);
+                await context.Entry(project).Collection(project => project.Words).LoadAsync();
+                ISet<Word> projectWords = project.Words;
+                var pageTasks = new Dictionary<Page, Task>();
 
-                Task t = Task.Run(async () =>
+                foreach (Page page in project.Pages)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (page.ProcessingStatus != PageProcessingStatus.Filtered)
+                        continue;
+
                     var sentences = page.FilteredContent.Split("\n").ToList();
 
                     var sentnecesWithWords = sentences.Select(s => s.Split().ToList()).ToList();
@@ -239,10 +284,13 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                         var words = sentnecesWithWords[i];
                         var sentneceWordCounter = new Dictionary<Word, int>();
                         Sentence sentence = new Sentence(page, i);
-                        _context.Add(sentence);
+                        context.Add(sentence);
                         page.Sentences.Add(sentence);
                         foreach (string wordString in words)
                         {
+                            if (wordString == "")
+                                continue;
+
                             Word word = projectWords.Where(word => word.WordContent == wordString).Single();
                             pageWordCounter[word] = pageWordCounter.ContainsKey(word) ? pageWordCounter[word] + 1 : 1;
                             sentneceWordCounter[word] = sentneceWordCounter.ContainsKey(word) ? sentneceWordCounter[word] + 1 : 1;
@@ -252,7 +300,7 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                         {
                             int count = sentneceWordCounter[word];
                             var wordSentence = new WordSentence(word, sentence, count);
-                            _context.Add(wordSentence);
+                            context.Add(wordSentence);
                         }
                     }
 
@@ -260,18 +308,30 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                     {
                         int count = pageWordCounter[word];
                         var wordPage = new WordPage(word, page, count);
-                        _context.Add(wordPage);
+                        context.Add(wordPage);
                     }
 
                     page.ProcessingStatus = PageProcessingStatus.Finished;
-                    await _context.SaveChangesAsync().ConfigureAwait(false);
-                });
 
-                pageTasks[page] = t;
+                }
+
+                await context.SaveChangesAsync().ConfigureAwait(false);
             }
+        }
 
-            await Task.WhenAll(pageTasks.Values.ToList()).ConfigureAwait(false);
-            await SavePageProcessingResult(pageTasks).ConfigureAwait(false);
+        private static async Task<Project> GetProjectWithPagesAsync(Project passedProject, RelatedWordsContext context)
+        {
+            return await context.Projects
+                .Include(project => project.Pages)
+                .SingleAsync(project => project.ProjectId == passedProject.ProjectId)
+                .ConfigureAwait(false);
+        }
+
+        private static async Task<Project> GetProjectAsync(Project passedProject, RelatedWordsContext context)
+        {
+            return await context.Projects
+                .SingleAsync(project => project.ProjectId == passedProject.ProjectId)
+                .ConfigureAwait(false);
         }
     }
 }

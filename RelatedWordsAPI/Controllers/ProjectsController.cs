@@ -61,7 +61,7 @@ namespace RelatedWordsAPI.Controllers
             if (await DoesntBelongToUser(id, User, _context))
                 return Unauthorized();
 
-            return project;
+            return Ok(project);
         }
 
         // PUT: api/Projects/5
@@ -137,48 +137,23 @@ namespace RelatedWordsAPI.Controllers
         }
 
         // GET: api/ProjectsWords/5
-        [HttpGet("{id}")]
+        [HttpGet("projectwords/{id}")]
         public async Task<IActionResult> GetProjectWords(int id)
         {
-            var project = await _context.Projects.FindAsync(id);
-            if (project == null)
-            {
-                return NotFound();
-            }
-
-            if (await DoesntBelongToUser(id, User, _context))
-                return Unauthorized();
-
-            Project projWithWords;
-
-            try
-            {
-                projWithWords = await _context.Projects
-                .Where(p => p.ProjectId == id)
-                .Include(p => p.Words)
-                .SingleAsync()
-                .ConfigureAwait(false);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProjectExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return Ok(projWithWords.Words);
+            Func<Project, List<Word>> extractWords = (proj) => proj.Words.Select(
+                w => new Word() { WordContent = w.WordContent, ProjectId = w.ProjectId, WordId = w.WordId }
+                ).ToList();
+            return await GetProjectRelatedCollections(id, User, "Words", extractWords).ConfigureAwait(false);
         }
 
         // GET: api/ProjectPages/5
-        [HttpGet("{id}")]
+        [HttpGet("projectpages/{id}")]
         public async Task<IActionResult> GetProjectPages(int id)
         {
-            return await GetProjectRelatedCollections(id, User, "Words").ConfigureAwait(false);
+            Func<Project, List<Page>> extractPages = (proj) => proj.Pages.Select(
+                p => new Page() { ProjectId = p.ProjectId, PageId = p.PageId, Url = p.Url }
+                ).ToList();
+            return await GetProjectRelatedCollections(id, User, "Pages", extractPages).ConfigureAwait(false);
         }
 
         private bool ProjectExists(int id)
@@ -203,7 +178,12 @@ namespace RelatedWordsAPI.Controllers
         /// <param name="User"></param>
         /// <param name="propertyPath"></param>
         /// <returns></returns>
-        private async Task<IActionResult> GetProjectRelatedCollections(int projectId, ClaimsPrincipal User, string propertyPath)
+        private async Task<IActionResult> GetProjectRelatedCollections<TResult>(
+            int projectId, 
+            ClaimsPrincipal User, 
+            string propertyPath, 
+            Func<Project,TResult> ExtractFromProject
+                )
         {
             var project = await _context.Projects.FindAsync(projectId);
             if (project == null)
@@ -214,11 +194,11 @@ namespace RelatedWordsAPI.Controllers
             if (await DoesntBelongToUser(projectId, User, _context))
                 return Unauthorized();
 
-            Project projWithWords;
+            Project projWithInclude;
 
             try
             {
-                projWithWords = await _context.Projects
+                projWithInclude = await _context.Projects
                 .Where(p => p.ProjectId == projectId)
                 .Include(propertyPath)
                 .SingleAsync()
@@ -236,7 +216,7 @@ namespace RelatedWordsAPI.Controllers
                 }
             }
 
-            return Ok(projWithWords.Words);
+            return Ok(ExtractFromProject(projWithInclude));
         }
     }
 }

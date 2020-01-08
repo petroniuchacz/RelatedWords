@@ -7,7 +7,9 @@ namespace RelatedWordsAPI.RelatedWordsProcessor.Helper
 {
     static class WordNetLaminizerExtent
     {
-        public static string Lemmatize(this Nltk.Stem.WordNetLemmatizer  lem, string word, string pos) 
-            => lem.PyObject.lemmatize(word, pos);
+        public static string Lemmatize(this Nltk.Stem.WordNetLemmatizer lem, string word, string pos)
+        {
+           return lem.PyObject.lemmatize(word, pos);
+        }
     }
 }

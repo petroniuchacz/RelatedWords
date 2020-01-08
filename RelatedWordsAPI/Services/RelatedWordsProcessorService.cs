@@ -20,40 +20,35 @@ namespace RelatedWordsAPI.Services
         public bool TryCancelProjectTask(Project project);
     }
 
-    public class RelatedWordsProcessorService : BackgroundService, IRelatedWordsProcessorService
+    public class RelatedWordsProcessorService : IRelatedWordsProcessorService
     {
 
         private readonly AppSettings _appSettings;
-        private readonly RelatedWordsContext _context;
-        private readonly IHttpEngine _httpEngine;
+        private readonly IServiceProvider _serviceProvider;
 
-        public RelatedWordsProcessorService(IOptions<AppSettings> appSettings, RelatedWordsContext context, IHttpEngine httpEngine)
+        public RelatedWordsProcessorService(IOptions<AppSettings> appSettings, IServiceProvider serviceProvider)
         {
             _appSettings = appSettings.Value;
-            _context = context;
-            _httpEngine = httpEngine;
+            _serviceProvider = serviceProvider;
         }
 
         public bool TryStartProcessing (Project project)
         {
             var cancellationTokenSource = new CancellationTokenSource();
             var cancellationToken = cancellationTokenSource.Token;
-            IProcessProjectTaskGenerator processProjectTaskGenerator = new ProcessProjectTaskGenerator(project, _context, _httpEngine);
-            Task task = new Task(async () => processProjectTaskGenerator.ProcessProjectTaskRun(cancellationToken).ConfigureAwait(false));
+            IProcessProjectTaskGenerator processProjectTaskGenerator = new ProcessProjectTaskGenerator(project, _serviceProvider);
+            Task<Task> task = new Task<Task>(async () => await processProjectTaskGenerator.ProcessProjectTaskRunAsync(cancellationToken));
             bool created = ProjectTaskCollection.Instance.TryAddOrReplaceProjectTask(project, task, cancellationTokenSource);
 
             if (created)
             {
-                TaskStart(task).ConfigureAwait(false);
+                TaskStart(task, processProjectTaskGenerator).ConfigureAwait(false);
             }
 
             return created;
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            throw new NotImplementedException();
-        }
+
 
         public bool GetProjectTaskStatus(Project project, out TaskStatus taskStatus)
         {
@@ -65,8 +60,8 @@ namespace RelatedWordsAPI.Services
                 return false;
             }
 
-            taskStatus = taskHolder.Task.Status;
-            return false;
+            taskStatus = taskHolder.Task.Result.Status;
+            return true;
         }
 
         public bool TryCancelProjectTask(Project project)
@@ -83,10 +78,9 @@ namespace RelatedWordsAPI.Services
             return true;
         }
 
-        private async Task TaskStart (Task task)
+        private async Task TaskStart (Task task, IProcessProjectTaskGenerator processProjectTaskGenerator)
         {
             task.Start();
-            await task;
         }
     }
 }

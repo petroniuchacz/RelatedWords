@@ -4,9 +4,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Knyaz.Optimus;
 using Knyaz.Optimus.ResourceProviders;
 using Knyaz.Optimus.ScriptExecuting.Jint;
+using RelatedWordsAPI.App;
 
 
 namespace RelatedWordsAPI.Services
@@ -28,8 +30,10 @@ namespace RelatedWordsAPI.Services
             private set;
         }
 
-        public HttpEngine(string userAgent)
+        public HttpEngine(IOptions<AppSettings> appSettings)
         {
+            var userAgent = appSettings.Value.HttpUserAgent;
+
             Engine = EngineBuilder.New()
             .ConfigureResourceProvider(x => x.Http().Notify(
                 request => { request.Headers["User-Agent"] = userAgent; },

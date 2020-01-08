@@ -176,11 +176,17 @@ namespace RelatedWordsAPI.RelatedWordsProcessor.Helper
             try
             {
                 var tag = TagTranslator[taggedWord.Item2];
-                return _lemmatizer.Lemmatize(taggedWord.Item1, tag);
+                lock (_lemmatizer)
+                {
+                    return _lemmatizer.Lemmatize(taggedWord.Item1, tag);
+                } 
             }
             catch (KeyNotFoundException e)
             {
-                return _lemmatizer.Lemmatize(taggedWord.Item1);
+                lock(_lemmatizer)
+                {
+                    return _lemmatizer.Lemmatize(taggedWord.Item1);
+                }
             }
         }
         private static Dictionary<string, string> TagTranslatorCreator()

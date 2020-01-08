@@ -11,6 +11,6 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
 {
     public interface IProcessProjectTaskGenerator
     {
-        Task ProcessProjectTaskRun(CancellationToken cancellationToken);
+        Task ProcessProjectTaskRunAsync(CancellationToken cancellationToken);
     }
 }

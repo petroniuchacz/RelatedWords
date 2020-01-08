@@ -70,11 +70,35 @@ namespace RelatedWordsAPI.Controllers
             TaskStatus taskStatus;
             if (_relatedWordsProcessorService.GetProjectTaskStatus(project, out taskStatus))
             {
-                return Ok(taskStatus);
+                return Ok(new {status = taskStatus.ToString()});
             }
             else
             {
                 return NotFound(new { message = "No processing task found for this project."});
+            }
+        }
+
+        [HttpPost("cancel/{projectId}")]
+        public async Task<ActionResult<TaskStatus>> Cancel(int projectId)
+        {
+            Project project = await _context.Projects.FindAsync(projectId);
+
+            if (project == null)
+            {
+                return BadRequest();
+            }
+
+            if (await ProjectValidation.DoesntBelongToUser(projectId, User, _context).ConfigureAwait(false))
+                return Unauthorized();
+
+            TaskStatus taskStatus;
+            if (_relatedWordsProcessorService.TryCancelProjectTask(project))
+            {
+                return NoContent();
+            }
+            else
+            {
+                return NotFound(new { message = "Could not cancel the processing of this project, because the task does not exist." });
             }
         }
     }
