@@ -44,14 +44,14 @@ namespace RelatedWordsAPI.Controllers
             Page page = await _context.Pages.FirstOrDefaultAsync(pa => pa.ProjectId == projectId);
             if (page == null)
             {
-                return NotFound(new { message = "No pages set for this project." });
+                return NotFound(new { error = "No pages set for this project." });
             }
 
             bool started = _relatedWordsProcessorService.TryStartProcessing(project);
             if (started)
                 return NoContent();
             else
-                return BadRequest(new { message = "Could not start processing of the project." });
+                return BadRequest(new { error = "Could not start processing of the project." });
         }
 
         [HttpGet("{projectId}")]
@@ -74,7 +74,7 @@ namespace RelatedWordsAPI.Controllers
             }
             else
             {
-                return NotFound(new { message = "No processing task found for this project."});
+                return NotFound(new { error = "No processing task found for this project."});
             }
         }
 
@@ -98,7 +98,7 @@ namespace RelatedWordsAPI.Controllers
             }
             else
             {
-                return NotFound(new { message = "Could not cancel the processing of this project, because the task does not exist." });
+                return NotFound(new { error = "Could not cancel the processing of this project, because the task does not exist." });
             }
         }
     }

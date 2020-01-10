@@ -137,28 +137,164 @@ namespace RelatedWordsAPI.Controllers
         }
 
         // GET: api/ProjectsWords/5
-        [HttpGet("projectwords/{id}")]
-        public async Task<IActionResult> GetProjectWords(int id)
+        [HttpGet("projectwords/{projectId}")]
+        public async Task<IActionResult> GetProjectWords(int projectId)
         {
             Func<Project, List<Word>> extractWords = (proj) => proj.Words.Select(
                 w => new Word() { WordContent = w.WordContent, ProjectId = w.ProjectId, WordId = w.WordId }
                 ).ToList();
-            return await GetProjectRelatedCollections(id, User, "Words", extractWords).ConfigureAwait(false);
+            return await GetProjectRelatedCollections(projectId, User, "Words", extractWords).ConfigureAwait(false);
         }
 
         // GET: api/ProjectPages/5
-        [HttpGet("projectpages/{id}")]
-        public async Task<IActionResult> GetProjectPages(int id)
+        [HttpGet("projectpages/{projectId}")]
+        public async Task<IActionResult> GetProjectPages(int projectId)
         {
             Func<Project, List<Page>> extractPages = (proj) => proj.Pages.Select(
                 p => new Page() { ProjectId = p.ProjectId, PageId = p.PageId, Url = p.Url }
                 ).ToList();
-            return await GetProjectRelatedCollections(id, User, "Pages", extractPages).ConfigureAwait(false);
+            return await GetProjectRelatedCollections(projectId, User, "Pages", extractPages).ConfigureAwait(false);
+        }
+
+        // GET: WordSentences/5
+        [HttpGet("wordsentences/{wordId}")]
+        public async Task<IActionResult> WordSentences(int wordId)
+        {
+            Func<Word, List<WordSentence>> extractWordSentences = (word) => word.WordSentences.Select(
+                ws => new WordSentence() { SentenceId = ws.SentenceId, WordId = ws.WordId, Count = ws.Count }
+                ).ToList();
+            return await GetWordRelatedCollections(wordId, User, "WordSentences", extractWordSentences).ConfigureAwait(false);
+        }
+
+        [HttpGet("wordpages/{wordId}")]
+        public async Task<IActionResult> WordPages(int wordId)
+        {
+            Func<Word, List<WordPage>> extractWordPages = (word) => word.WordPages.Select(
+                wp => new WordPage() { PageId = wp.PageId, WordId = wp.WordId, Count = wp.Count }
+                ).ToList();
+            return await GetWordRelatedCollections(wordId, User, "WordPages", extractWordPages).ConfigureAwait(false);
+        }
+
+        // GET: RelatedWordSentences/5
+        [HttpGet("relatedwordsentences/{wordId}")]
+        public async Task<IActionResult> RelatedWordSentences(int wordId)
+        {
+            WordValidationResult result = await WordValidation.ValidateRequest(
+                _context, User, wordId
+                ).ConfigureAwait(false);
+
+            switch(result)
+            {
+                case WordValidationResult.Unauthorized:
+                    return Unauthorized();
+                case WordValidationResult.NotFound:
+                    return NotFound();
+                default:
+                    break;
+            }
+
+            var word = await _context.Words.FindAsync(wordId);
+
+            Word wordWithInclude;
+
+            try
+            {
+                wordWithInclude = await _context.Words
+                .Where(w => w.WordId == wordId)
+                .Include(w => w.WordSentences)
+                .SingleAsync()
+                .ConfigureAwait(false);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!WordExists(wordId))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            Func<WordSentence, Task<List<WordSentence>>> getRelated = async (ws) =>
+                await _context.WordSentences
+                .Where(e => ws.SentenceId == e.SentenceId && ws.WordId != e.WordId)
+                .ToListAsync();
+
+            var relatedWordSentencs = new List<WordSentence>();
+            foreach (WordSentence wordSentence in wordWithInclude.WordSentences)
+            {
+                relatedWordSentencs.AddRange(await getRelated(wordSentence).ConfigureAwait(false));
+            }
+
+            return Ok(relatedWordSentencs);
+        }
+
+        // GET: RelatedWordPages/5
+        [HttpGet("relatedwordpages/{wordId}")]
+        public async Task<IActionResult> RelatedWordPages(int wordId)
+        {
+            WordValidationResult result = await WordValidation.ValidateRequest(
+                _context, User, wordId
+                ).ConfigureAwait(false);
+
+            switch (result)
+            {
+                case WordValidationResult.Unauthorized:
+                    return Unauthorized();
+                case WordValidationResult.NotFound:
+                    return NotFound();
+                default:
+                    break;
+            }
+
+            var word = await _context.Words.FindAsync(wordId);
+
+            Word wordWithInclude;
+
+            try
+            {
+                wordWithInclude = await _context.Words
+                .Where(w => w.WordId == wordId)
+                .Include(w => w.WordPages)
+                .SingleAsync()
+                .ConfigureAwait(false);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!WordExists(wordId))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            Func<WordPage, Task<List<WordPage>>> getRelated = async (wp) =>
+                await _context.WordPages
+                .Where(e => wp.PageId == e.PageId && wp.WordId != e.WordId)
+                .ToListAsync();
+
+            var relatedWordPage = new List<WordPage>();
+            foreach (WordPage wordPage in wordWithInclude.WordPages)
+            {
+                relatedWordPage.AddRange(await getRelated(wordPage).ConfigureAwait(false));
+            }
+
+            return Ok(relatedWordPage);
         }
 
         private bool ProjectExists(int id)
         {
             return _context.Projects.Any(e => e.ProjectId == id);
+        }
+
+        private bool WordExists(int id)
+        {
+            return _context.Words.Any(e => e.WordId == id);
         }
 
         internal static Task<bool> DoesntBelongToUser(int userId, int projectId, RelatedWordsContext context)
@@ -172,11 +308,19 @@ namespace RelatedWordsAPI.Controllers
         }
 
         /// <summary>
-        /// 
+        /// Method that loads a Project with a related property, transforms it 
+        /// and returns an IActionResult, that contains the transformation result.
         /// </summary>
+        /// <typeparam name="TResult">
+        /// </typeparam>
         /// <param name="projectId"></param>
         /// <param name="User"></param>
-        /// <param name="propertyPath"></param>
+        /// <param name="propertyPath">
+        /// String containing the propert name of the related objects that should be included with the Project.
+        /// </param>
+        /// <param name="ExtractFromProject">
+        /// Function that takes a Project as parameter and returns any type.
+        /// </param>
         /// <returns></returns>
         private async Task<IActionResult> GetProjectRelatedCollections<TResult>(
             int projectId, 
@@ -206,7 +350,7 @@ namespace RelatedWordsAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ProjectExists(projectId))
+                if (!WordExists(projectId))
                 {
                     return NotFound();
                 }
@@ -217,6 +361,68 @@ namespace RelatedWordsAPI.Controllers
             }
 
             return Ok(ExtractFromProject(projWithInclude));
+        }
+
+        /// <summary>
+        /// Method that loads a Word with a related property, transforms it 
+        /// and returns an IActionResult, that contains the transformation result.
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="wordId"></param>
+        /// <param name="User"></param>
+        /// <param name="propertyPath">
+        /// String containing the property name of the related objects that should be included with the Word.
+        /// </param>
+        /// <param name="ExtractFromWord">
+        /// Function that takes a Word as parameter and returns any type.
+        /// </param>
+        /// <returns></returns>
+        private async Task<IActionResult> GetWordRelatedCollections<TResult>(
+    int wordId,
+    ClaimsPrincipal User,
+    string propertyPath,
+    Func<Word, TResult> ExtractFromWord
+        )
+        {
+            var word = await _context.Words.FindAsync(wordId);
+            if (word == null)
+            {
+                return NotFound();
+            }
+
+            var projectId = word.ProjectId;
+            var project = await _context.Projects.FindAsync(projectId);
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            if (await DoesntBelongToUser(projectId, User, _context))
+                return Unauthorized();
+
+            Word wordWithInclude;
+
+            try
+            {
+                wordWithInclude = await _context.Words
+                .Where(w => w.WordId == wordId)
+                .Include(propertyPath)
+                .SingleAsync()
+                .ConfigureAwait(false);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!WordExists(projectId))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return Ok(ExtractFromWord(wordWithInclude));
         }
     }
 }
