@@ -5,4 +5,4 @@ easy addition of other text filters.
 
 # RelatedWordsAPI
 Exposes a rest API that allows to manage the backend processing of text sources. Currently it fires background text processing threads,
-though this functionality 
+though this functionality should be moved to a separate service.
