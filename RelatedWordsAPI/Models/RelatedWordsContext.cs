@@ -9,6 +9,7 @@ namespace RelatedWordsAPI.Models
 
     public class RelatedWordsContext : DbContext
     {
+        public RelatedWordsContext() { }
         public RelatedWordsContext(DbContextOptions<RelatedWordsContext> options) : base(options)
         {
         }

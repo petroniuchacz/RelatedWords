@@ -18,20 +18,18 @@ namespace RelatedWordsAPI.Controllers
     public class ProcessingController : ControllerBase
     {
         private readonly RelatedWordsContext _context;
-        private readonly IUserService _userService;
         private readonly IRelatedWordsProcessorService _relatedWordsProcessorService;
 
-        public ProcessingController(RelatedWordsContext context, IUserService userService, IRelatedWordsProcessorService relatedWordsProcessorService)
+        public ProcessingController(RelatedWordsContext context, IRelatedWordsProcessorService relatedWordsProcessorService)
         {
             _context = context;
-            _userService = userService;
             _relatedWordsProcessorService = relatedWordsProcessorService;
         }
 
         [HttpPost("{projectId}")]
         public async Task<ActionResult> Start(int projectId)
         {
-            Project project = await _context.Projects.FindAsync(projectId);
+            Project project = await _context.Projects.SingleOrDefaultAsync(p => p.ProjectId == projectId);
 
             if (project == null)
             {
