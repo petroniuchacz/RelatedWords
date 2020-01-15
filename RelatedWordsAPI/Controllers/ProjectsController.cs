@@ -183,7 +183,7 @@ namespace RelatedWordsAPI.Controllers
                 _context, User, wordId
                 ).ConfigureAwait(false);
 
-            switch(result)
+            switch (result)
             {
                 case WordValidationResult.Unauthorized:
                     return Unauthorized();
@@ -302,7 +302,7 @@ namespace RelatedWordsAPI.Controllers
             return ProjectValidation.DoesntBelongToUser(userId, projectId, context);
         }
 
-        internal static Task<bool> DoesntBelongToUser (int projectId, ClaimsPrincipal User, RelatedWordsContext context)
+        internal static Task<bool> DoesntBelongToUser(int projectId, ClaimsPrincipal User, RelatedWordsContext context)
         {
             return ProjectValidation.DoesntBelongToUser(projectId, User, context);
         }
@@ -323,10 +323,10 @@ namespace RelatedWordsAPI.Controllers
         /// </param>
         /// <returns></returns>
         private async Task<IActionResult> GetProjectRelatedCollections<TResult>(
-            int projectId, 
-            ClaimsPrincipal User, 
-            string propertyPath, 
-            Func<Project,TResult> ExtractFromProject
+            int projectId,
+            ClaimsPrincipal User,
+            string propertyPath,
+            Func<Project, TResult> ExtractFromProject
                 )
         {
             var project = await _context.Projects.FindAsync(projectId);
@@ -378,10 +378,10 @@ namespace RelatedWordsAPI.Controllers
         /// </param>
         /// <returns></returns>
         private async Task<IActionResult> GetWordRelatedCollections<TResult>(
-    int wordId,
-    ClaimsPrincipal User,
-    string propertyPath,
-    Func<Word, TResult> ExtractFromWord
+            int wordId,
+            ClaimsPrincipal User,
+            string propertyPath,
+            Func<Word, TResult> ExtractFromWord
         )
         {
             var word = await _context.Words.FindAsync(wordId);

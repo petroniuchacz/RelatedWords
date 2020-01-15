@@ -68,11 +68,11 @@ namespace RelatedWordsAPI.Controllers
             TaskStatus taskStatus;
             if (_relatedWordsProcessorService.GetProjectTaskStatus(project, out taskStatus))
             {
-                return Ok(new {status = taskStatus.ToString()});
+                return Ok(new { status = taskStatus.ToString() });
             }
             else
             {
-                return NotFound(new { error = "No processing task found for this project."});
+                return NotFound(new { error = "No processing task found for this project." });
             }
         }
 

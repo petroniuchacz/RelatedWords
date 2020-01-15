@@ -32,7 +32,7 @@ namespace RelatedWordsAPI.Services
             _serviceProvider = serviceProvider;
         }
 
-        public bool TryStartProcessing (Project project)
+        public bool TryStartProcessing(Project project)
         {
             var cancellationTokenSource = new CancellationTokenSource();
             var cancellationToken = cancellationTokenSource.Token;
@@ -54,7 +54,7 @@ namespace RelatedWordsAPI.Services
         {
             TaskHolder taskHolder = ProjectTaskCollection.Instance.GetProjectTaskOrNull(project);
 
-            if (taskHolder == null) 
+            if (taskHolder == null)
             {
                 taskStatus = TaskStatus.WaitingForActivation;
                 return false;
@@ -68,7 +68,7 @@ namespace RelatedWordsAPI.Services
         {
             TaskHolder taskHolder = ProjectTaskCollection.Instance.GetProjectTaskOrNull(project);
 
-            if(taskHolder == null)
+            if (taskHolder == null)
             {
                 return false;
             }
@@ -78,7 +78,7 @@ namespace RelatedWordsAPI.Services
             return true;
         }
 
-        private async Task TaskStart (Task task, IProcessProjectTaskGenerator processProjectTaskGenerator)
+        private async Task TaskStart(Task task, IProcessProjectTaskGenerator processProjectTaskGenerator)
         {
             task.Start();
         }
