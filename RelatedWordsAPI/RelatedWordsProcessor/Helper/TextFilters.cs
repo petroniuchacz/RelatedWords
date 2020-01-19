@@ -59,6 +59,7 @@ namespace RelatedWordsAPI.RelatedWordsProcessor.Helper
                 "the",
                 "by",
                 "'s",
+                "s",
             };
 
             pattern = ConvertToRegexPattern(words);

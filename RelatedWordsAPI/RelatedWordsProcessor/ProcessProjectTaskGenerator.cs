@@ -91,6 +91,8 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
 
                     await TogglePagesStatusAsync(project, cancellationToken, PageProcessingStatus.Processing);
 
+                    await CleanupProjectEntitiesAsync(project, cancellationToken);
+
                     await PreparePageContentAsync(project, cancellationToken).ConfigureAwait(false);
 
                     await SaveProjectWordsAsync(project, cancellationToken).ConfigureAwait(false);
@@ -140,6 +142,23 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
             }
         }
 
+        private async Task CleanupProjectEntitiesAsync(Project passedProject, CancellationToken cancellationToken)
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
+                var project = await GetProjectWithPagesAsync(passedProject, context);
+                await context.Entry(project).Collection(project => project.Words).LoadAsync(cancellationToken);
+                context.RemoveRange(project.Words);
+                foreach(Page page in project.Pages)
+                {
+                    await context.Entry(page).Collection(page => page.Sentences).LoadAsync(cancellationToken);
+                    context.RemoveRange(page.Sentences);
+                }
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         private async Task PreparePageContentAsync(Project passedProject, CancellationToken cancellationToken)
         {
             List<Task> tasks = new List<Task>();
@@ -179,8 +198,6 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
             {
                 var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
                 var project = await GetProjectWithPagesAsync(passedProject, context);
-                await context.Entry(project).Collection(project => project.Words).LoadAsync(cancellationToken);
-                context.RemoveRange(project.Words);
                 var pages = project.Pages;
                 var words = new HashSet<Word>();
                 foreach (var page in pages)
@@ -193,7 +210,7 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
 
                     foreach (string word in content.Split())
                     {
-                        if (word != "")
+                        if (string.IsNullOrEmpty(word))
                         {
                             words.Add(new Word(word, project));
                         }
@@ -264,6 +281,9 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                 var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
                 var project = await GetProjectWithPagesAsync(passedProject, context);
                 await context.Entry(project).Collection(project => project.Words).LoadAsync();
+                var sentenceList = new List<Sentence>();
+                var wordSentenceList = new List<WordSentence>();
+                var wordPageList = new List<WordPage>();
                 ISet<Word> projectWords = project.Words;
                 var pageTasks = new Dictionary<Page, Task>();
 
@@ -284,8 +304,7 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                         var words = sentnecesWithWords[i];
                         var sentneceWordCounter = new Dictionary<Word, int>();
                         Sentence sentence = new Sentence(page, i);
-                        context.Add(sentence);
-                        page.Sentences.Add(sentence);
+                        sentenceList.Add(sentence);
                         foreach (string wordString in words)
                         {
                             if (wordString == "")
@@ -300,7 +319,7 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                         {
                             int count = sentneceWordCounter[word];
                             var wordSentence = new WordSentence(word, sentence, count);
-                            context.Add(wordSentence);
+                            wordSentenceList.Add(wordSentence);
                         }
                     }
 
@@ -308,13 +327,16 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                     {
                         int count = pageWordCounter[word];
                         var wordPage = new WordPage(word, page, count);
-                        context.Add(wordPage);
+                        wordPageList.Add(wordPage);
                     }
 
                     page.ProcessingStatus = PageProcessingStatus.Finished;
 
                 }
 
+                await context.Sentences.AddRangeAsync(sentenceList).ConfigureAwait(false);
+                await context.WordPages.AddRangeAsync(wordPageList).ConfigureAwait(false);
+                await context.WordSentences.AddRangeAsync(wordSentenceList).ConfigureAwait(false);
                 await context.SaveChangesAsync().ConfigureAwait(false);
             }
         }
