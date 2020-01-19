@@ -88,10 +88,13 @@ namespace RelatedWordsAPI
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            // Enables cross origin requests
+            app.UseCors();
 
             app.UseAuthentication();
 
