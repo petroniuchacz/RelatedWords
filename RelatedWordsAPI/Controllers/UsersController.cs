@@ -33,7 +33,7 @@ namespace RelatedWordsAPI.Controllers
             var user = await _userService.Authenticate(userParam.Email, userParam.Password).ConfigureAwait(false);
 
             if (user == null)
-                return BadRequest(new { message = "Email or password is incorrect" });
+                return Unauthorized(new { message = "Email or password is incorrect" });
 
             return Ok(Models.User.GenerateWithoutSensitive(user));
         }

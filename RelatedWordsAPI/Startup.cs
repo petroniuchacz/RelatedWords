@@ -36,6 +36,8 @@ namespace RelatedWordsAPI
 
         }
 
+        readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -73,6 +75,17 @@ namespace RelatedWordsAPI
                 };
             });
 
+            services.AddCors(options =>
+            {
+                options.AddPolicy(MyAllowSpecificOrigins,
+                builder =>
+                {
+                    builder.WithOrigins("*")
+                                .AllowAnyHeader()
+                                .AllowAnyMethod();
+                });
+            });
+
             // configure DI for application services
             services.AddScoped<IUserService, UserService>();
             services.AddSingleton<IRelatedWordsProcessorService, RelatedWordsProcessorService>();
@@ -94,7 +107,7 @@ namespace RelatedWordsAPI
             app.UseRouting();
 
             // Enables cross origin requests
-            app.UseCors();
+            app.UseCors(MyAllowSpecificOrigins);
 
             app.UseAuthentication();
 
