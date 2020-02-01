@@ -2,7 +2,7 @@ import * as api from '../api/user'
 import User from '../models/User'
 import {newNotification} from  './notifications'
 
-function createUserLoggedIn(user) {
+function createUserSignedIn(user) {
   return {
     type: 'USER_LOGGED_IN',
     payload: {
@@ -12,7 +12,7 @@ function createUserLoggedIn(user) {
   }
 }
 
-function createUserNotLoggedIn() {
+function createUserNotSignedIn() {
   return {
     type: 'USER_NOT_LOGGED_IN',
     payload: {
@@ -34,31 +34,36 @@ export function fetchLoginStatus() {
     catch {}
 
     if (user == null) {
-      dispatch(createUserNotLoggedIn());
+      dispatch(createUserNotSignedIn());
     } else if (user.token == null) {
-      dispatch(createUserNotLoggedIn());
+      dispatch(createUserNotSignedIn());
     } else {
       api.getUser(user).then(resp => {
         if (resp.error != null) {
           console.log(resp.error);
-          dispatch(createUserNotLoggedIn());
+          dispatch(createUserNotSignedIn());
         } else {
           const user = new User({...resp})
-          dispatch(createUserLoggedIn(user));
+          dispatch(createUserSignedIn(user));
         }
       })
     }
   }
 }
 
-export function userLogin(email, password, keepSignedIn) {
+export function userSignIn(email, password, keepSignedIn) {
   return dispatch => {
     api.userLogin(email, password).then(resp => {
       if (resp.error != null) {
         console.log(resp.error);
-        if (resp.error.response.status === 401) {
-          dispatch(newNotification('error', 'Wrong credentials. Please try again.')); 
-        } else {
+        try {
+          if (resp.error.response.status === 401) {
+            dispatch(newNotification('error', 'Wrong credentials. Please try again.')); 
+          } else {
+            dispatch(newNotification('error', 'Sign in failed. Please try again.')); 
+          }
+        } 
+        catch {
           dispatch(newNotification('error', 'Sign in failed. Please try again.')); 
         }
       } else {
@@ -66,8 +71,16 @@ export function userLogin(email, password, keepSignedIn) {
         sessionStorage.setItem('user', JSON.stringify(user));
         if (keepSignedIn)
           localStorage.setItem('user', JSON.stringify(user));
-        dispatch(createUserLoggedIn(user));
+        dispatch(createUserSignedIn(user));
       }
     })
+  }
+}
+
+export function userSignOut() {
+  return dispatch => {
+    sessionStorage.removeItem('user');
+    localStorage.removeItem('user');
+    dispatch(createUserNotSignedIn());
   }
 }

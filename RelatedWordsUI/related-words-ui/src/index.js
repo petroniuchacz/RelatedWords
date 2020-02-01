@@ -4,6 +4,7 @@ import { createStore, applyMiddleware } from "redux";
 import "./index.css";
 import "./stylesheets/NavBar.css";
 import "./stylesheets/App.css";
+import "./stylesheets/Notifications.css";
 import App from "./App";
 import { Provider } from "react-redux";
 import thunk from "redux-thunk";

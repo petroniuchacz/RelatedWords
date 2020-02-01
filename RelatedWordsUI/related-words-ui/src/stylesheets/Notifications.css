@@ -1,0 +1,38 @@
+#notifications {
+  z-index: 200;
+  position: absolute;
+  margin: 5px;
+  width: inherit;
+}
+
+.notification {
+  padding: 2mm;
+  border-style: solid;
+  border-width: 2px;
+  border-radius: 10px;
+  width: 80vw;
+}
+
+.notification-error {
+  background-color: rgba(220, 20, 60, 0.5);
+  border-color: rgba(220, 20, 60);
+  color:  rgba(220, 20, 60);
+  font-size: 14px;
+}
+
+.notification-error:hover {
+  background-color: rgba(220, 20, 60);
+  color: black;
+}
+
+.notification-info {
+  background-color: rgba(56, 108, 204, 0.5);
+  border-color:  rgb(20, 57, 220);
+  color:  rgb(20, 57, 220);
+  font-size: 14px;
+}
+
+.notification-info:hover {
+  background-color:  rgb(20, 57, 220);
+  color: black;
+}

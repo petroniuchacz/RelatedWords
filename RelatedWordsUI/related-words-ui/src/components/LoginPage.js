@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import {userLogin} from '../actions/user'
+import {userSignIn} from '../actions/user'
+import {Redirect} from 'react-router-dom';
 import {newNotification} from '../actions/notifications'
 
 class LoginPage extends Component {
@@ -9,7 +10,8 @@ class LoginPage extends Component {
     this.state = {
       email: "",
       password: "",
-      keepSignedIn: false
+      keepSignedIn: false,
+      loginSuccess: false
     }
   }
 
@@ -31,8 +33,8 @@ class LoginPage extends Component {
     const password = this.state.password;
     if(!!email.trim() && !!password.trim()) {
       this.props.dispatch(
-        userLogin(email, password, this.state.keepSignedIn)
-        );
+        userSignIn(email, password, this.state.keepSignedIn)
+        )
     } else {
       this.props.dispatch(
         newNotification("error", "Please fill in email and password fields.")
@@ -41,6 +43,12 @@ class LoginPage extends Component {
   }
 
   render() {
+    if (this.state.loginSuccess === true) {
+      return (
+        <Redirect to='/app'/>
+      )
+    }
+
     return (
       <div className="login-page">
         <form className="login-form" onSubmit={this.onUserLogin}>

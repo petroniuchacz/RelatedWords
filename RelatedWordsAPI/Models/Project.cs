@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
 namespace RelatedWordsAPI.Models
 {
@@ -25,6 +27,9 @@ namespace RelatedWordsAPI.Models
         public string Name { get; set; }
         public User User { get; set; }
         public ProjectProcessingStatus ProcessingStatus { get; set; }
+
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public DateTime CreatedDate { get; set; }
         public ICollection<Page> Pages { get; set; }
         public ISet<Word> Words { get; private set; }
     }

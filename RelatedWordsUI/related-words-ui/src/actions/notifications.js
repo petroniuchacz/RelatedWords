@@ -16,3 +16,16 @@ export function newNotification(type, message) {
     dispatch(createNotification(type, message, id));
   }
 }
+
+function removeNotification(id) {
+  return {
+    type: 'REMOVE_NOTIFICATION',
+    payload: {id: id}
+  }
+}
+
+export function deleteNotification(id) {
+  return dispatch => {
+    dispatch(removeNotification(id))
+  }
+}

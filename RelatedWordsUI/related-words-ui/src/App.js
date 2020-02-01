@@ -1,8 +1,11 @@
 import React, {Component} from 'react';
 import { connect } from 'react-redux';
-import LoginPage from './components/LoginPage';
+import { Switch, Route, Redirect } from 'react-router-dom';
 import { fetchLoginStatus } from './actions/user';
 import AppPage from './components/AppPage';
+import LoginPage from './components/LoginPage';
+import PrivateRoute from './components/PrivateRoute';
+import Notifications from './components/Notifications';
 
 class App extends Component {
 
@@ -11,11 +14,14 @@ class App extends Component {
   }
 
   render() {
-    const loginStatus = this.props.loginStatus;
     return(
       <div className="app">
-        {loginStatus && (<AppPage/>)}
-        {!loginStatus && loginStatus != null && (<LoginPage/>)}
+        <Notifications/>
+        <Switch>
+          <PrivateRoute path="/app" component={AppPage}/>
+          <Route path="/login" component={LoginPage}/>
+        </Switch>
+        {this.props.loginStatus ? <Redirect to='/app'/> : <Redirect to='/login'/>}
       </div>
     );
   }
