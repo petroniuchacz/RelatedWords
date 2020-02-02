@@ -1,11 +1,16 @@
 import React, {Component} from 'react';
 import { connect } from 'react-redux';
-import {userSignOut} from '../actions/user'
+import {userSignOut} from '../actions/user';
+import {newProject} from '../actions/projects';
 
 class NavBar extends Component {
 
   signOut = (e) => {
     this.props.dispatch(userSignOut())
+  }
+
+  newProject = (e) => {
+    this.props.dispatch(newProject(this.props.user.token));
   }
 
   render() {
@@ -18,7 +23,7 @@ class NavBar extends Component {
           <ul className="nav-bar nav-bar-left">
               <li><button  className="first">Projects  &raquo;</button>
                 <ul>
-                    <li><button onClick={this.signOut}>New</button></li>
+                    <li><button onClick={this.newProject}>New Project</button></li>
                 </ul>
               </li>
               <li><button>Filters</button></li>

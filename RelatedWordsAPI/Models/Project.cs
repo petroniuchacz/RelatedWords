@@ -27,8 +27,6 @@ namespace RelatedWordsAPI.Models
         public string Name { get; set; }
         public User User { get; set; }
         public ProjectProcessingStatus ProcessingStatus { get; set; }
-
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public DateTime CreatedDate { get; set; }
         public ICollection<Page> Pages { get; set; }
         public ISet<Word> Words { get; private set; }
