@@ -8,6 +8,25 @@ class Project {
     this.processingStatus = isDefinedOrNull(props.processingStatus);
     this.createdDate = isDefinedOrNull(props.createdDate);
   }
+
+  processingStatusToString() {
+    switch(this.processingStatus) {
+      case 0:
+        return 'Not Started';
+      case 1:
+        return 'Processing';
+      case 2:
+        return 'Finished';
+      case 3:
+        return 'Canceled';
+      case 4:
+        return 'Failed';
+      case 5:
+        return 'Unknown';
+      default:
+        return 'Unknown';
+    }
+  }
 }
 
 export default Project;

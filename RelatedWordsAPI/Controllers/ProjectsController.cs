@@ -36,7 +36,7 @@ namespace RelatedWordsAPI.Controllers
             return await _context.Projects.ToListAsync();
         }
 
-        [HttpGet]
+        [HttpGet("getuserprojects")]
         // GET: api/UserProjects
         public async Task<ActionResult<IEnumerable<Project>>> GetUserProjects()
         {

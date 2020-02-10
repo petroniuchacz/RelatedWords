@@ -7,6 +7,13 @@ function projects(state = {projects: [], active: null}, action) {
       return {...state, projects: [...state.projects].concat(payload.project)}
     case 'MAKE_ACTIVE':
       return {active: payload.project, projects: [...state.projects]}
+    case 'POPULATE_PROJECTS':
+      return {...state, projects: [...payload.projects]}
+    case 'REMOVE_PROJECTS':
+      let projectIds = payload.projects.map(p => p.projectId);
+      return {...state, projects: state.projects.filter(p => 
+        !projectIds.includes(p.projectId)
+        )};
     default:
       return state;
   }

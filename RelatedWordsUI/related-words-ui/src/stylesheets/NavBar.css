@@ -1,8 +1,11 @@
 /* Main Navigation */
-
+.NavBar {
+  position: absolute;
+  margin: 7px;
+}
 
 #nav {
-  position:relative;
+  position: relative;
   top:0;
   left:0;
   /*width:620px;*/

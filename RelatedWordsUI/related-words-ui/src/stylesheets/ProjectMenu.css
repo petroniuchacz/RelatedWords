@@ -1,0 +1,31 @@
+div#project-menu {
+  display: grid;
+  grid-template-columns: auto auto auto auto 60px 60px;
+  max-width: 700px;
+}
+
+div#project-menu div {
+  padding: 4px;
+  border-top:1px solid #c4dbe7;
+  align-items: center;
+  text-align: center;
+  vertical-align: middle;
+}
+
+div.project-menu-top {
+  color:#616161;
+  text-shadow:1px 1px 0px #fff;
+  text-decoration:none;
+  border-right:1px solid #fff;
+  border-left:1px solid #C2C2C2;
+  border-top:1px solid #fff;
+  border-bottom: 2px solid #9c9c9c;
+}
+
+div.project-menu-top:hover {
+  background-color: #fff;
+}
+
+div.project-menu-top-last {
+  border-right:1px solid #C2C2C2;
+}
