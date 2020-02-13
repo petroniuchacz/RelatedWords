@@ -24,6 +24,15 @@ namespace RelatedWordsAPI.Models
         }
         public int ProjectId { get; set; }
         public int UserId { get; set; }
+        // Increased, when something changes in the project. May serve to refresh UI.
+        public int EditRevisionNumber { get; set; }
+        // Increased, when something changes in the project pages. 
+        // Together with ProcessedPagesRevisionNumber may serve to know that the processing results are outdated.
+        public int EditPagesRevisionNumber { get; set; }
+        // Increased, when the project is processed.
+        public int ProcessingRevisionNumber { get; set; }
+        // Contains the EditPagesRevisionNumber, when the project was last processed.
+        public int ProcessedPagesRevisionNumber { get; set; }
         public string Name { get; set; }
         public User User { get; set; }
         public ProjectProcessingStatus ProcessingStatus { get; set; }

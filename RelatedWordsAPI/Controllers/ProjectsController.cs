@@ -80,9 +80,12 @@ namespace RelatedWordsAPI.Controllers
             if (await DoesntBelongToUser(userId, id, _context))
                 return Unauthorized();
 
-            project.UserId = userId;
+            // we are updating "Bind" props, but making a copy of other props
+            Project previous = await _context.Projects.FindAsync(id);
+            previous.Name = project.Name;
+            previous.EditRevisionNumber += 1;
 
-            _context.Entry(project).State = EntityState.Modified;
+            _context.Entry(previous).State = EntityState.Modified;
 
             try
             {

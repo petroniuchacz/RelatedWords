@@ -29,6 +29,12 @@ namespace RelatedWordsAPI.Models
                 .HasDefaultValue(ProjectProcessingStatus.NotStarted)
                 .HasConversion<string>();
             modelBuilder.Entity<Project>().ToTable("Project")
+                .Property(p => p.EditRevisionNumber)
+                .HasDefaultValue(0);
+            modelBuilder.Entity<Project>().ToTable("Project")
+                .Property(p => p.ProcessingRevisionNumber)
+                .HasDefaultValue(0);
+            modelBuilder.Entity<Project>().ToTable("Project")
                 .Property(p => p.CreatedDate)
                 .HasDefaultValueSql("now()");
             modelBuilder.Entity<Page>().ToTable("Page")

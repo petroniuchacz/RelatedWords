@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RelatedWordsAPI.Models;
@@ -9,9 +10,10 @@ using RelatedWordsAPI.Models;
 namespace RelatedWordsAPI.Migrations
 {
     [DbContext(typeof(RelatedWordsContext))]
-    partial class RelatedWordsContextModelSnapshot : ModelSnapshot
+    [Migration("20200210110417_ProjectRevisionNumbersCorrected")]
+    partial class ProjectRevisionNumbersCorrected
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -63,9 +65,6 @@ namespace RelatedWordsAPI.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasDefaultValueSql("now()");
 
-                    b.Property<int>("EditPagesRevisionNumber")
-                        .HasColumnType("integer");
-
                     b.Property<int>("EditRevisionNumber")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -73,9 +72,6 @@ namespace RelatedWordsAPI.Migrations
 
                     b.Property<string>("Name")
                         .HasColumnType("text");
-
-                    b.Property<int>("ProcessedPagesRevisionNumber")
-                        .HasColumnType("integer");
 
                     b.Property<int>("ProcessingRevisionNumber")
                         .ValueGeneratedOnAdd()

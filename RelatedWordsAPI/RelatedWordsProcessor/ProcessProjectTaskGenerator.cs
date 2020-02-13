@@ -87,6 +87,8 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
 
                 try
                 {
+                    await ToggleProjectRevisionAsync(project, cancellationToken);
+
                     await ToggleProjectStatusAsync(project, cancellationToken, ProjectProcessingStatus.Processing);
 
                     await TogglePagesStatusAsync(project, cancellationToken, PageProcessingStatus.Processing);
@@ -122,6 +124,18 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
                 var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
                 var project = await GetProjectAsync(passedProject, context);
                 project.ProcessingStatus = status;
+                await context.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        private async Task ToggleProjectRevisionAsync(Project passedProject, CancellationToken cancellationToken)
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<RelatedWordsContext>();
+                var project = await GetProjectAsync(passedProject, context);
+                project.ProcessingRevisionNumber += 1;
+                project.ProcessedPagesRevisionNumber = project.ProcessingRevisionNumber;
                 await context.SaveChangesAsync(cancellationToken);
             }
         }
@@ -210,7 +224,7 @@ namespace RelatedWordsAPI.RelatedWordsProcessor
 
                     foreach (string word in content.Split())
                     {
-                        if (string.IsNullOrEmpty(word))
+                        if (!string.IsNullOrEmpty(word))
                         {
                             words.Add(new Word(word, project));
                         }

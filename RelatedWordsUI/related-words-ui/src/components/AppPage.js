@@ -15,7 +15,7 @@ const AppPage = props => {
           <NavBar currentPath={path}/>
           <div id="central-area">
             <Switch>
-              <Route path={`${path}/project/:projecId`} component={ProjectPage}/>
+              <Route path={`${path}/project/:projectId`} component={ProjectPage}/>
               <Route path={`${path}/projectmenu`} component={ProjectMenu}/>
             </Switch>
           </div>

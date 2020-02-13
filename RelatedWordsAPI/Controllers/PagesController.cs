@@ -70,6 +70,8 @@ namespace RelatedWordsAPI.Controllers
                 return BadRequest();
 
             UpdatePages(project, pages);
+            project.EditRevisionNumber += 1;
+            project.EditPagesRevisionNumber += 1;
 
             _context.Entry(project).State = EntityState.Modified;
 

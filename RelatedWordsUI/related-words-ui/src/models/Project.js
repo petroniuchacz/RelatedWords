@@ -7,6 +7,10 @@ class Project {
     this.name = isDefinedOrNull(props.name);
     this.processingStatus = isDefinedOrNull(props.processingStatus);
     this.createdDate = isDefinedOrNull(props.createdDate);
+    this.editRevisionNumber = isDefinedOrNull(props.editRevisionNumber);
+    this.editPagesRevisionNumber = isDefinedOrNull(props.editPagesRevisionNumber);
+    this.processingRevisionNumber = isDefinedOrNull(props.processingRevisionNumber);
+    this.processedPagesRevisionNumber = isDefinedOrNull(props.processedPagesRevisionNumber);
   }
 
   processingStatusToString() {
