@@ -117,7 +117,7 @@ namespace RelatedWordsAPI.Controllers
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetProject", new { id = project.ProjectId }, project);
+            return CreatedAtAction("PostProject", new { id = project.ProjectId }, project);
         }
 
         // DELETE: api/Projects/5
@@ -288,6 +288,86 @@ namespace RelatedWordsAPI.Controllers
             }
 
             return Ok(relatedWordPage);
+        }
+
+        [HttpPost("projectFilters/{projectId}")]
+        public async Task<ActionResult<ProjectFilter>> PostProjectFilter(int projectId, ProjectFilter projectFilter)
+        {
+            if (projectId != projectFilter.ProjectId)
+            {
+                return BadRequest();
+            }
+
+            int userId = int.Parse(User.Identity.Name);
+
+            if (await DoesntBelongToUser(userId, projectId, _context))
+                return Unauthorized();
+
+            if (await FilterValidation.DoesntBelongToUser(userId, projectFilter.FilterId, _context))
+                return Unauthorized();
+
+            var existingProjectFilter = await _context.ProjectFilters
+                .Where(e => e.ProjectId == projectId && e.FilterId == projectFilter.FilterId)
+                .SingleOrDefaultAsync();
+
+            if (existingProjectFilter != null)
+            {
+                existingProjectFilter.filterType = projectFilter.filterType;
+            }
+            else
+            {
+                _context.ProjectFilters.Add(projectFilter);
+            }
+            
+            await _context.SaveChangesAsync();
+
+            var returnProjectFilter = existingProjectFilter == null ? projectFilter : existingProjectFilter;
+
+            return CreatedAtAction("PostProjectFilter",
+                new ProjectFilter() { FilterId = returnProjectFilter.FilterId, 
+                    ProjectId = returnProjectFilter.ProjectId, 
+                    filterType = returnProjectFilter.filterType} );
+        }
+
+        [HttpGet("projectFilters/{projectId}")]
+        public async Task<ActionResult<ICollection<ProjectFilter>>> GetProjectFilters(int projectId)
+        {
+            int userId = int.Parse(User.Identity.Name);
+
+            if (await DoesntBelongToUser(userId, projectId, _context))
+                return Unauthorized();
+
+            var projectFilters = await _context.ProjectFilters.Where(e => e.ProjectId == projectId).ToListAsync();
+
+            return Ok(projectFilters.Select(e => new ProjectFilter()
+                {
+                    FilterId = e.FilterId,
+                    ProjectId = e.ProjectId,
+                    filterType = e.filterType
+                }
+            ));
+        }
+
+        [HttpDelete("ProjectFilters/{projectId}")]
+        public async Task<ActionResult<ProjectFilter>> DeleteProjectFilter(int projectId, ProjectFilter projectFilter)
+        {
+            if (projectId != projectFilter.ProjectId)
+            {
+                return BadRequest();
+            }
+
+            int userId = int.Parse(User.Identity.Name);
+
+            if (await DoesntBelongToUser(userId, projectId, _context))
+                return Unauthorized();
+
+            if (await FilterValidation.DoesntBelongToUser(userId, projectFilter.FilterId, _context))
+                return Unauthorized();
+
+            _context.ProjectFilters.Remove(projectFilter);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
 
         private bool ProjectExists(int id)

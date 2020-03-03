@@ -20,6 +20,9 @@ namespace RelatedWordsAPI.Models
         public DbSet<Word> Words { get; set; }
         public DbSet<WordPage> WordPages { get; set; }
         public DbSet<WordSentence> WordSentences { get; set; }
+        public DbSet<Filter> Filters { get; set; }
+        public DbSet<FilterWord> FilterWords { get; set; }
+        public DbSet<ProjectFilter> ProjectFilters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -47,6 +50,15 @@ namespace RelatedWordsAPI.Models
                 .HasKey(ws => new { ws.WordId, ws.SentenceId });
             modelBuilder.Entity<WordPage>().ToTable("WordPage")
                 .HasKey(wp => new { wp.WordId, wp.PageId });
+            modelBuilder.Entity<Filter>().ToTable("Filter")
+                .Property(f => f.EditRevisionNumber)
+                .HasDefaultValue(0);
+            modelBuilder.Entity<Filter>().ToTable("Filter")
+                .Property(f => f.CreatedDate)
+                .HasDefaultValueSql("now()");
+            modelBuilder.Entity<FilterWord>().ToTable("FilterWord");
+            modelBuilder.Entity<ProjectFilter>().ToTable("ProjectFilter")
+                .HasKey(pf => new { pf.FilterId, pf.ProjectId });
         }
     }
 

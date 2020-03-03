@@ -25,7 +25,5 @@ namespace RelatedWordsAPI.App.Helpers
         {
             return DoesntBelongToUser(int.Parse(User.Identity.Name), projectId, context);
         }
-
-
     }
 }

@@ -39,5 +39,6 @@ namespace RelatedWordsAPI.Models
         public DateTime CreatedDate { get; set; }
         public ICollection<Page> Pages { get; set; }
         public ISet<Word> Words { get; private set; }
+        public ICollection<ProjectFilter> ProjectFilters { get; set; }
     }
 }

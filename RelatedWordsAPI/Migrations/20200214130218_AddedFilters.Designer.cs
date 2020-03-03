@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RelatedWordsAPI.Models;
@@ -9,9 +10,10 @@ using RelatedWordsAPI.Models;
 namespace RelatedWordsAPI.Migrations
 {
     [DbContext(typeof(RelatedWordsContext))]
-    partial class RelatedWordsContextModelSnapshot : ModelSnapshot
+    [Migration("20200214130218_AddedFilters")]
+    partial class AddedFilters
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -156,9 +158,6 @@ namespace RelatedWordsAPI.Migrations
                     b.Property<int>("ProjectId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("filterType")
-                        .HasColumnType("integer");
-
                     b.HasKey("FilterId", "ProjectId");
 
                     b.HasIndex("ProjectId");
@@ -218,6 +217,9 @@ namespace RelatedWordsAPI.Migrations
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<int?>("FilterId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("ProjectId")
                         .HasColumnType("integer");
 
@@ -225,6 +227,8 @@ namespace RelatedWordsAPI.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("WordId");
+
+                    b.HasIndex("FilterId");
 
                     b.HasIndex("ProjectId");
 
@@ -279,7 +283,7 @@ namespace RelatedWordsAPI.Migrations
             modelBuilder.Entity("RelatedWordsAPI.Models.FilterWord", b =>
                 {
                     b.HasOne("RelatedWordsAPI.Models.Filter", "Filter")
-                        .WithMany("FilterWords")
+                        .WithMany()
                         .HasForeignKey("FilterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -327,6 +331,10 @@ namespace RelatedWordsAPI.Migrations
 
             modelBuilder.Entity("RelatedWordsAPI.Models.Word", b =>
                 {
+                    b.HasOne("RelatedWordsAPI.Models.Filter", null)
+                        .WithMany("Words")
+                        .HasForeignKey("FilterId");
+
                     b.HasOne("RelatedWordsAPI.Models.Project", "Project")
                         .WithMany("Words")
                         .HasForeignKey("ProjectId")
